@@ -1,0 +1,89 @@
+---
+- name: provision infrastructure
+  import_playbook: provision.yml
+
+- name: Set up the Tower cluster instances
+  hosts: tower
+  become: yes
+  roles:
+    - rhel-base
+
+- hosts: localhost
+  connection: local
+  tasks:
+    - block:
+        - name: download the tower installer
+          get_url:
+            url: "{{ tower_installer_url }}"
+            dest: /tmp/
+          register: installer_download
+
+        - command: tar -xzf {{ installer_download.dest }}
+          args:
+            warn: no
+
+        - name: configure the installation
+          copy:
+            content: |
+              [tower]
+              {% for instance in groups['tower'] %}
+              {{ hostvars[instance]['ansible_host'] }} rabbitmq_host={{ hostvars[instance]['private_ip'] }} ansible_user={{ ansible_user }} ansible_become=yes
+              {% endfor %}
+
+              [database]
+
+              [all:vars]
+              admin_password='{{ admin_password }}'
+
+              pg_host='{{ hostvars['db']['pg_host'] }}'
+              pg_port='{{ pg_port }}'
+
+              pg_database='{{ pg_database }}'
+              pg_username='{{ pg_username }}'
+              pg_password='{{ pg_password }}'
+
+              rabbitmq_username={{ rabbitmq_username }}
+              rabbitmq_password='{{ rabbitmq_password }}'
+              rabbitmq_cookie={{ rabbitmq_cookie }}
+            dest: /tmp/{{ tower_installer_name }}/inventory
+
+        - name: run the setup script if necessary
+          shell: ./setup.sh
+          args:
+            chdir: /tmp/{{ tower_installer_name }}
+      when: run_setup | default('yes') | bool
+
+- hosts: tower
+  become: yes
+  roles:
+    - tower-base
+  tasks:
+    - name: Apply the Tower license
+      uri:
+        url: https://{{ ansible_host }}/api/v2/config/
+        method: POST
+        body: "{{ lookup('file', license_path) | from_json | combine(eula_acceptance) }}"
+        body_format: json
+        user: "{{ admin_user }}"
+        password: "{{ admin_password }}"
+        validate_certs: no
+        force_basic_auth: yes
+      vars:
+        eula_acceptance:
+          eula_accepted: 'true'
+      run_once: yes
+
+    - name: Ensure the certificate is in place
+      copy:
+        src: "{{ cert_path }}"
+        dest: /etc/tower/tower.cert
+      register: cert_copy
+
+    - name: Ensure the private key is in place
+      copy:
+        src: "{{ priv_key_path }}"
+        dest: /etc/tower/tower.key
+      register: key_copy
+    
+    - command: ansible-tower-service restart
+      when: (cert_copy is changed) or (key_copy is changed)

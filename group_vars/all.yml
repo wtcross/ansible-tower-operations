@@ -1,0 +1,33 @@
+---
+region: us-east-1
+environment_name: si
+public_internet_cidr: 0.0.0.0/0
+
+aws_access_key: "{{ lookup('env', 'ANSIBLE_AWS_ACCESS_KEY_ID') }}"
+aws_secret_key: "{{ lookup('env', 'ANSIBLE_AWS_SECRET_ACCESS_KEY') }}"
+
+ansible_python_interpreter: python
+ansible_user: centos
+
+tower_target_version: 3.4.3-1
+tower_installer_name: ansible-tower-setup-{{ tower_target_version }}
+tower_installer_url: https://releases.ansible.com/ansible-tower/setup/{{ tower_installer_name }}.tar.gz
+
+admin_user: admin
+admin_password: "{{ lookup('env', 'ANSIBLE_TOWER_ADMIN_PASSWORD' )}}"
+
+pg_database: "{{ environment_name | regex_replace('[^0-9a-zA-Z]', '') }}tower"
+pg_username: tower
+pg_password: "{{ lookup('env', 'ANSIBLE_TOWER_DB_PASSWORD') }}"
+pg_port: 5432
+
+rabbitmq_username: tower
+rabbitmq_password: "{{ lookup('env', 'ANSIBLE_TOWER_RMQ_PASSWORD') }}"
+rabbitmq_cookie: "{{ lookup('env', 'ANSIBLE_TOWER_RMQ_COOKIE') }}"
+
+license_path: "{{ lookup('env', 'ANSIBLE_TOWER_LICENSE_PATH') }}"
+
+key_pair_name: "{{ lookup('env', 'ANSIBLE_TOWER_KEY_PAIR') }}"
+ami_id: "{{ lookup('env', 'ANSIBLE_TOWER_AMI') }}"
+cert_path: "{{ lookup('env', 'ANSIBLE_TOWER_CERT_PATH') }}"
+priv_key_path: "{{ lookup('env', 'ANSIBLE_TOWER_PRIV_KEY_PATH') }}"

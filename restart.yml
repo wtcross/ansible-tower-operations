@@ -1,0 +1,9 @@
+---
+- name: provision infrastructure
+  import_playbook: provision.yml
+
+- hosts: tower
+  become: yes
+  tasks:
+    - name: restart all tower instances
+      command: ansible-tower-service restart

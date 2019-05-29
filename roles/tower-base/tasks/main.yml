@@ -1,0 +1,17 @@
+---
+- name: ensure all needed python packages are installed in the ansible and awx virtualenvs
+  pip:
+    name:
+      - boto
+      - botocore
+      - boto3
+      - azure
+      - pywinrm
+      - pyvmomi
+      - xmltodict
+      - passlib
+    virtualenv: "{{ item }}"
+    state: latest
+  loop:
+    - /var/lib/awx/venv/ansible
+    - /var/lib/awx/venv/awx

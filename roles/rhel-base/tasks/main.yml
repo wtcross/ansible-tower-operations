@@ -1,0 +1,45 @@
+---
+- name: install epel repo
+  yum:
+    name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
+    state: present
+
+- name: import epel gpg key
+  rpm_key:
+    key: /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-{{ ansible_distribution_major_version }}
+    state: present
+
+- name: upgrade all packages
+  yum:
+    update_cache: yes
+    name: '*'
+    state: latest
+
+- name: ensure all needed yum packages are installed
+  yum:
+    name:
+      - bash
+      - git
+      - htop
+      - nano
+      - python
+      - python-devel
+      - python-virtualenv
+      - python-setuptools
+      - python-pip
+      - openssl
+      - openssl-devel
+      - ansible
+    update_cache: no
+    state: present
+
+- name: upgrade pip
+  shell: pip install pip --upgrade
+
+- name: ensure all needed python packages are installed
+  pip:
+    name:
+      - ansible-tower-cli
+      - awscli
+      - shyaml
+    state: latest
